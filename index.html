@@ -96,7 +96,28 @@ canvas{border-radius:6px}
 
 <!-- IPD -->
 <div class="game-container active" id="game-ipd">
-<div class="game-desc"><h3>Iterated Prisoner's Dilemma</h3>Two players repeatedly choose to Cooperate or Defect. Mutual cooperation rewards both, but defecting against a cooperator yields a higher individual payoff. Classical strategies compete in a round-robin tournament.</div>
+<div class="game-desc"><h3>Iterated Prisoner's Dilemma</h3>
+<p>Two players repeatedly choose to <strong>Cooperate</strong> or <strong>Defect</strong>. The payoff depends on both choices:</p>
+<table style="margin:10px 0;font-size:12px;border-collapse:collapse;width:100%">
+<tr><td></td><td style="padding:6px 10px;text-align:center;color:var(--accent);font-weight:600">Opponent Cooperates</td><td style="padding:6px 10px;text-align:center;color:var(--red);font-weight:600">Opponent Defects</td></tr>
+<tr><td style="padding:6px 10px;color:var(--accent);font-weight:600">You Cooperate</td><td style="padding:6px 10px;text-align:center;background:rgba(63,185,80,0.1);border-radius:4px"><strong>R = Reward</strong><br><span style="color:var(--text-dim)">Both cooperate. Win-win.</span></td><td style="padding:6px 10px;text-align:center;background:rgba(248,81,73,0.1);border-radius:4px"><strong>S = Sucker</strong><br><span style="color:var(--text-dim)">You cooperated, they betrayed you.</span></td></tr>
+<tr><td style="padding:6px 10px;color:var(--red);font-weight:600">You Defect</td><td style="padding:6px 10px;text-align:center;background:rgba(248,81,73,0.1);border-radius:4px"><strong>T = Temptation</strong><br><span style="color:var(--text-dim)">You betrayed a cooperator. Highest payoff.</span></td><td style="padding:6px 10px;text-align:center;background:rgba(139,148,158,0.1);border-radius:4px"><strong>P = Punishment</strong><br><span style="color:var(--text-dim)">Both defected. Lose-lose.</span></td></tr>
+</table>
+<p style="margin-top:8px;font-size:12px;color:var(--text-dim)">The dilemma: <strong>T &gt; R &gt; P &gt; S</strong>. Defecting always gives a better individual payoff, but mutual cooperation beats mutual defection. Classical strategies compete in a round-robin tournament.</p>
+<details style="margin-top:10px;font-size:12px">
+<summary style="cursor:pointer;color:var(--accent);font-weight:500">📖 Strategy Guide</summary>
+<ul style="margin-top:8px;padding-left:16px;line-height:2;color:var(--text-dim)">
+<li><strong>Tit-for-Tat</strong> — Start cooperating, then copy opponent's last move. Simple but powerful.</li>
+<li><strong>Always Cooperate</strong> — Never defect. Exploitable but maximizes mutual benefit.</li>
+<li><strong>Always Defect</strong> — Never cooperate. Exploits cooperators but can't build trust.</li>
+<li><strong>Pavlov</strong> — Win-Stay, Lose-Switch. Repeat last move if it worked, switch if it didn't.</li>
+<li><strong>Generous TFT</strong> — Like Tit-for-Tat but forgives 10% of defections randomly.</li>
+<li><strong>Random</strong> — 50/50 coin flip each round. The baseline.</li>
+<li><strong>Grudger</strong> — Cooperates until betrayed once, then defects forever. Unforgiving.</li>
+<li><strong>Suspicious TFT</strong> — Like Tit-for-Tat but starts by defecting. Trust issues.</li>
+</ul>
+</details>
+</div>
 <div class="game-layout">
 <div class="panel">
 <h3>Configuration</h3>
@@ -129,7 +150,15 @@ canvas{border-radius:6px}
 
 <!-- Evolutionary -->
 <div class="game-container" id="game-evo">
-<div class="game-desc"><h3>Evolutionary Dynamics</h3>Strategies compete and reproduce proportional to fitness. Watch natural selection unfold: which strategies survive when populations evolve over generations?</div>
+<div class="game-desc"><h3>Evolutionary Dynamics</h3>
+<p>A population of agents with different strategies plays the Prisoner's Dilemma. After each generation:</p>
+<ul style="margin:8px 0;padding-left:16px;font-size:12px;line-height:1.8;color:var(--text-dim)">
+<li><strong>Fitness</strong> = total score from all matches in the generation</li>
+<li>Strategies <strong>reproduce proportionally</strong> to their fitness (more successful = more offspring)</li>
+<li><strong>Mutation</strong> = small random chance of offspring switching to a different strategy</li>
+</ul>
+<p style="font-size:12px;color:var(--text-dim)">This simulates <strong>natural selection</strong>: which strategies thrive in a competitive ecosystem? Robert Axelrod found that Tit-for-Tat tends to dominate — cooperation evolves!</p>
+</div>
 <div class="game-layout">
 <div class="panel">
 <h3>Configuration</h3>
@@ -156,7 +185,15 @@ canvas{border-radius:6px}
 
 <!-- Public Goods -->
 <div class="game-container" id="game-public">
-<div class="game-desc"><h3>Public Goods Game</h3>Players contribute to a common pool that is multiplied and shared equally. Free-riders benefit without contributing. Optional punishment allows costly sanctioning of free-riders.</div>
+<div class="game-desc"><h3>Public Goods Game</h3>
+<p>Each of <strong>N players</strong> secretly decides how much to contribute (0-10) to a common pool.</p>
+<ul style="margin:8px 0;padding-left:16px;font-size:12px;line-height:1.8;color:var(--text-dim)">
+<li><strong>Multiplier</strong> — The total pool is multiplied by this factor (e.g., 1.5x), then split equally among ALL players</li>
+<li><strong>Free-rider problem</strong> — Contributing nothing while others contribute gives you the best individual outcome</li>
+<li><strong>Punishment</strong> — Players can pay a cost to reduce a free-rider's payoff (altruistic punishment)</li>
+</ul>
+<p style="font-size:12px;color:var(--text-dim)">Classic example: If 5 players each contribute 10 with a 2x multiplier: pool = 100, doubled to 200, each gets 40 (profit of 30). But a free-rider who contributes 0 gets 32 while keeping their 10 = 42 total. <strong>The tragedy of the commons.</strong></p>
+</div>
 <div class="game-layout">
 <div class="panel">
 <h3>Configuration</h3>
@@ -189,7 +226,22 @@ canvas{border-radius:6px}
 
 <!-- Ultimatum -->
 <div class="game-container" id="game-ultimatum">
-<div class="game-desc"><h3>Ultimatum Game</h3>A proposer offers a split of 100 units. The responder can accept or reject — rejection means both get nothing. Rational agents should accept any offer, yet humans consistently reject unfair splits.</div>
+<div class="game-desc"><h3>Ultimatum Game</h3>
+<p>Two roles: <strong>Proposer</strong> splits 100 units. <strong>Responder</strong> accepts or rejects.</p>
+<ul style="margin:8px 0;padding-left:16px;font-size:12px;line-height:1.8;color:var(--text-dim)">
+<li><strong>Accept</strong> — Both get the proposed split (e.g., 70/30)</li>
+<li><strong>Reject</strong> — BOTH get nothing. Zero-zero.</li>
+</ul>
+<p style="font-size:12px;color:var(--text-dim)">A perfectly rational responder should accept even $1 (it's free money!). But in experiments, humans reject offers below ~30% — we prefer punishing unfairness even at personal cost. This challenges the "homo economicus" model.</p>
+<details style="margin-top:8px;font-size:12px">
+<summary style="cursor:pointer;color:var(--accent);font-weight:500">📖 Strategies</summary>
+<ul style="margin-top:6px;padding-left:16px;line-height:1.8;color:var(--text-dim)">
+<li><strong>Fair</strong> — Proposes 50/50. Accepts anything ≥ 30%.</li>
+<li><strong>Greedy</strong> — Proposes 90/10. Accepts anything ≥ 1.</li>
+<li><strong>Adaptive</strong> — Adjusts offers based on rejection history.</li>
+</ul>
+</details>
+</div>
 <div class="game-layout">
 <div class="panel">
 <h3>Configuration</h3>
@@ -225,7 +277,15 @@ canvas{border-radius:6px}
 
 <!-- Hawk-Dove -->
 <div class="game-container" id="game-hawkdove">
-<div class="game-desc"><h3>Hawk-Dove Game</h3>Hawks fight over resources (risking injury); Doves share peacefully but lose to Hawks. The Evolutionarily Stable Strategy (ESS) emerges as a mixed population balance.</div>
+<div class="game-desc"><h3>Hawk-Dove Game</h3>
+<p>Two players compete for a resource of value <strong>V</strong>. Each chooses to be <strong>Hawk</strong> (aggressive) or <strong>Dove</strong> (passive).</p>
+<table style="margin:10px 0;font-size:12px;border-collapse:collapse;width:100%">
+<tr><td></td><td style="padding:6px 10px;text-align:center;color:var(--red);font-weight:600">vs Hawk</td><td style="padding:6px 10px;text-align:center;color:var(--green);font-weight:600">vs Dove</td></tr>
+<tr><td style="padding:6px 10px;color:var(--red);font-weight:600">Hawk</td><td style="padding:6px 10px;text-align:center;background:rgba(248,81,73,0.1);border-radius:4px"><strong>(V-C)/2</strong><br><span style="color:var(--text-dim)">Fight! Both risk injury cost C.</span></td><td style="padding:6px 10px;text-align:center;background:rgba(63,185,80,0.1);border-radius:4px"><strong>V</strong><br><span style="color:var(--text-dim)">Hawk takes everything.</span></td></tr>
+<tr><td style="padding:6px 10px;color:var(--green);font-weight:600">Dove</td><td style="padding:6px 10px;text-align:center;background:rgba(248,81,73,0.1);border-radius:4px"><strong>0</strong><br><span style="color:var(--text-dim)">Dove retreats, gets nothing.</span></td><td style="padding:6px 10px;text-align:center;background:rgba(63,185,80,0.1);border-radius:4px"><strong>V/2</strong><br><span style="color:var(--text-dim)">Share peacefully.</span></td></tr>
+</table>
+<p style="font-size:12px;color:var(--text-dim)">When <strong>C &gt; V</strong> (fighting costs more than the resource), the ESS is a mixed population. Neither pure-Hawk nor pure-Dove is stable. Used to model animal conflict, market competition, and international relations.</p>
+</div>
 <div class="game-layout">
 <div class="panel">
 <h3>Configuration</h3>
@@ -249,7 +309,15 @@ canvas{border-radius:6px}
 
 <!-- LLM Arena -->
 <div class="game-container" id="game-llm">
-<div class="game-desc"><h3>LLM Arena Mode</h3>Pit language models against each other and classical strategies in the Prisoner's Dilemma. Connect to a local Ollama instance to see how LLMs behave as game theory agents.</div>
+<div class="game-desc"><h3>LLM Arena Mode</h3>
+<p>Pit <strong>language models</strong> against each other and classical strategies in the Prisoner's Dilemma.</p>
+<ul style="margin:8px 0;padding-left:16px;font-size:12px;line-height:1.8;color:var(--text-dim)">
+<li><strong>How it works</strong> — Each LLM receives the game rules + move history, and decides COOPERATE or DEFECT</li>
+<li><strong>Metrics tracked</strong> — Cooperation rate, reciprocity (copying opponent), forgiveness (cooperating after betrayal)</li>
+<li><strong>Models available</strong> — qwen3:8b, gemma3:4b, llama3.2:3b, smollm2:1.7b (via local Ollama)</li>
+</ul>
+<p style="font-size:12px;color:var(--text-dim)">⚠️ Requires Ollama running locally (localhost:11434). LLM mode is slower (~2-5s per move). Recent research shows LLMs tend to cooperate more than optimal — are they "nicer" than rational agents?</p>
+</div>
 <div class="game-layout">
 <div class="panel">
 <h3>Configuration</h3>
