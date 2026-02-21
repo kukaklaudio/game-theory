@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Theory Simulator</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--accent:#58a6ff;--accent2:#f0883e;--text:#c9d1d9;--text-dim:#8b949e;--text-bright:#f0f6fc;--green:#3fb950;--red:#f85149;--purple:#bc8cff}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px 16px;border-radius:6px;font-size:13px;transition:all .15s}
+button:hover{border-color:var(--accent);color:var(--text-bright)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.primary:hover{opacity:.85}
+button.danger{border-color:var(--red);color:var(--red)}
+button.danger:hover{background:var(--red);color:#fff}
+input,select{font-family:inherit;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+select{cursor:pointer}
+label{font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+canvas{border-radius:6px}
+
+/* Header */
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:16px}
+.header h1{font-size:18px;font-weight:700;color:var(--text-bright)}
+.header h1 span{color:var(--accent)}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;background:var(--bg);border-bottom:1px solid var(--border);padding:0 24px;overflow-x:auto}
+.tab{padding:10px 18px;font-size:13px;font-weight:500;color:var(--text-dim);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Layout */
+.game-container{display:none;padding:20px 24px}
+.game-container.active{display:block}
+.game-desc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;line-height:1.6;border-left:3px solid var(--accent)}
+.game-desc h3{color:var(--text-bright);margin-bottom:6px;font-size:14px}
+.game-layout{display:grid;grid-template-columns:320px 1fr;gap:20px}
+@media(max-width:900px){.game-layout{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px}
+.panel h3{font-size:13px;font-weight:600;color:var(--text-bright);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+.field{margin-bottom:12px}
+.field input,.field select{width:100%}
+.field-row{display:flex;gap:8px;margin-bottom:12px}
+.field-row .field{flex:1;margin-bottom:0}
+.btn-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+
+/* Strategy checkboxes */
+.strat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.strat-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.strat-item input[type=checkbox]{accent-color:var(--accent)}
+
+/* Results table */
+.results-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+.results-table th{text-align:left;padding:8px;border-bottom:2px solid var(--border);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:11px}
+.results-table td{padding:6px 8px;border-bottom:1px solid var(--border)}
+.results-table tr:hover td{background:rgba(88,166,255,.05)}
+.rank-1{color:var(--green);font-weight:700}
+.rank-2{color:var(--accent)}
+.rank-3{color:var(--accent2)}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-top:12px}
+.stat-card{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center}
+.stat-card .val{font-size:20px;font-weight:700;color:var(--text-bright)}
+.stat-card .lbl{font-size:10px;color:var(--text-dim);margin-top:2px;text-transform:uppercase}
+
+/* Progress */
+.progress-bar{width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:var(--accent);transition:width .1s;width:0%}
+.status-text{font-size:12px;color:var(--text-dim);margin:4px 0}
+
+/* Log */
+.log-area{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;max-height:200px;overflow-y:auto;font-family:'SF Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:12px}
+.log-area .coop{color:var(--green)}
+.log-area .defect{color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>🎲 Game Theory <span>Simulator</span></h1>
+</div>
+
+<div class="tabs" id="tabs">
+<div class="tab active" data-tab="ipd">Prisoner's Dilemma</div>
+<div class="tab" data-tab="evo">Evolutionary Dynamics</div>
+<div class="tab" data-tab="public">Public Goods</div>
+<div class="tab" data-tab="ultimatum">Ultimatum Game</div>
+<div class="tab" data-tab="hawkdove">Hawk-Dove</div>
+<div class="tab" data-tab="llm">LLM Arena</div>
+</div>
+
+<!-- IPD -->
+<div class="game-container active" id="game-ipd">
+<div class="game-desc"><h3>Iterated Prisoner's Dilemma</h3>Two players repeatedly choose to Cooperate or Defect. Mutual cooperation rewards both, but defecting against a cooperator yields a higher individual payoff. Classical strategies compete in a round-robin tournament.</div>
+<div class="game-layout">
+<div class="panel">
+<h3>Configuration</h3>
+<div class="field-row">
+<div class="field"><label>T (Temptation)</label><input type="number" id="ipd-T" value="5" min="0"></div>
+<div class="field"><label>R (Reward)</label><input type="number" id="ipd-R" value="3" min="0"></div>
+</div>
+<div class="field-row">
+<div class="field"><label>P (Punishment)</label><input type="number" id="ipd-P" value="1" min="0"></div>
+<div class="field"><label>S (Sucker)</label><input type="number" id="ipd-S" value="0" min="0"></div>
+</div>
+<div class="field"><label>Rounds per Match</label><input type="number" id="ipd-rounds" value="200" min="1"></div>
+<h3 style="margin-top:16px">Strategies</h3>
+<div class="strat-list" id="ipd-strats"></div>
+<div class="btn-row">
+<button class="primary" onclick="IPD.run()">▶ Run Tournament</button>
+<button onclick="IPD.exportCSV()">📥 CSV</button>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="ipd-progress"></div></div>
+<div class="status-text" id="ipd-status"></div>
+</div>
+<div class="panel">
+<h3>Results</h3>
+<canvas id="ipd-chart" width="700" height="300"></canvas>
+<table class="results-table" id="ipd-table"><thead><tr><th>#</th><th>Strategy</th><th>Total Score</th><th>Avg/Match</th><th>Coop Rate</th></tr></thead><tbody></tbody></table>
+<div class="stats-grid" id="ipd-stats"></div>
+</div>
+</div>
+</div>
+
+<!-- Evolutionary -->
+<div class="game-container" id="game-evo">
+<div class="game-desc"><h3>Evolutionary Dynamics</h3>Strategies compete and reproduce proportional to fitness. Watch natural selection unfold: which strategies survive when populations evolve over generations?</div>
+<div class="game-layout">
+<div class="panel">
+<h3>Configuration</h3>
+<div class="field"><label>Population Size</label><input type="number" id="evo-pop" value="300" min="10"></div>
+<div class="field"><label>Generations</label><input type="number" id="evo-gens" value="100" min="1"></div>
+<div class="field"><label>Rounds per Match</label><input type="number" id="evo-rounds" value="20" min="1"></div>
+<div class="field"><label>Mutation Rate (%)</label><input type="number" id="evo-mutation" value="2" min="0" max="100" step="0.5"></div>
+<h3 style="margin-top:16px">Initial Strategies</h3>
+<div class="strat-list" id="evo-strats"></div>
+<div class="btn-row">
+<button class="primary" onclick="EVO.run()">▶ Evolve</button>
+<button onclick="EVO.stop()">⏹ Stop</button>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="evo-progress"></div></div>
+<div class="status-text" id="evo-status"></div>
+</div>
+<div class="panel">
+<h3>Population Over Time</h3>
+<canvas id="evo-chart" width="700" height="350"></canvas>
+<div class="stats-grid" id="evo-stats"></div>
+</div>
+</div>
+</div>
+
+<!-- Public Goods -->
+<div class="game-container" id="game-public">
+<div class="game-desc"><h3>Public Goods Game</h3>Players contribute to a common pool that is multiplied and shared equally. Free-riders benefit without contributing. Optional punishment allows costly sanctioning of free-riders.</div>
+<div class="game-layout">
+<div class="panel">
+<h3>Configuration</h3>
+<div class="field"><label>Number of Players</label><input type="number" id="pg-players" value="6" min="2" max="20"></div>
+<div class="field"><label>Multiplication Factor</label><input type="number" id="pg-factor" value="1.5" min="1" max="5" step="0.1"></div>
+<div class="field"><label>Rounds</label><input type="number" id="pg-rounds" value="50" min="1"></div>
+<div class="field"><label>Endowment per Round</label><input type="number" id="pg-endow" value="10" min="1"></div>
+<div class="field"><label><input type="checkbox" id="pg-punish"> Enable Punishment (cost 1, reduce 3)</label></div>
+<h3 style="margin-top:16px">Player Types</h3>
+<div class="strat-list">
+<label class="strat-item"><input type="checkbox" checked data-pg="full"> Full Contributor</label>
+<label class="strat-item"><input type="checkbox" checked data-pg="half"> Half Contributor</label>
+<label class="strat-item"><input type="checkbox" checked data-pg="free"> Free Rider</label>
+<label class="strat-item"><input type="checkbox" checked data-pg="conditional"> Conditional (avg last round)</label>
+<label class="strat-item"><input type="checkbox" data-pg="random"> Random</label>
+</div>
+<div class="btn-row">
+<button class="primary" onclick="PG.run()">▶ Run</button>
+<button onclick="PG.exportCSV()">📥 CSV</button>
+</div>
+</div>
+<div class="panel">
+<h3>Results</h3>
+<canvas id="pg-chart" width="700" height="300"></canvas>
+<table class="results-table" id="pg-table"><thead><tr><th>Type</th><th>Count</th><th>Avg Contrib</th><th>Avg Payoff</th></tr></thead><tbody></tbody></table>
+<div class="stats-grid" id="pg-stats"></div>
+</div>
+</div>
+</div>
+
+<!-- Ultimatum -->
+<div class="game-container" id="game-ultimatum">
+<div class="game-desc"><h3>Ultimatum Game</h3>A proposer offers a split of 100 units. The responder can accept or reject — rejection means both get nothing. Rational agents should accept any offer, yet humans consistently reject unfair splits.</div>
+<div class="game-layout">
+<div class="panel">
+<h3>Configuration</h3>
+<div class="field"><label>Number of Rounds</label><input type="number" id="ult-rounds" value="1000" min="1"></div>
+<div class="field"><label>Proposer Strategy</label>
+<select id="ult-proposer">
+<option value="fair">Fair (50/50)</option>
+<option value="greedy">Greedy (keeps 90)</option>
+<option value="adaptive">Adaptive</option>
+<option value="random">Random</option>
+<option value="mixed">Mixed Population</option>
+</select></div>
+<div class="field"><label>Responder Strategy</label>
+<select id="ult-responder">
+<option value="rational">Rational (accept all)</option>
+<option value="fair">Fair (reject < 30)</option>
+<option value="spiteful">Spiteful (reject < 40)</option>
+<option value="adaptive">Adaptive</option>
+<option value="mixed">Mixed Population</option>
+</select></div>
+<div class="btn-row">
+<button class="primary" onclick="ULT.run()">▶ Run</button>
+<button onclick="ULT.exportCSV()">📥 CSV</button>
+</div>
+</div>
+<div class="panel">
+<h3>Results</h3>
+<canvas id="ult-chart" width="700" height="300"></canvas>
+<div class="stats-grid" id="ult-stats"></div>
+</div>
+</div>
+</div>
+
+<!-- Hawk-Dove -->
+<div class="game-container" id="game-hawkdove">
+<div class="game-desc"><h3>Hawk-Dove Game</h3>Hawks fight over resources (risking injury); Doves share peacefully but lose to Hawks. The Evolutionarily Stable Strategy (ESS) emerges as a mixed population balance.</div>
+<div class="game-layout">
+<div class="panel">
+<h3>Configuration</h3>
+<div class="field"><label>Resource Value (V)</label><input type="number" id="hd-V" value="4" min="1"></div>
+<div class="field"><label>Fight Cost (C)</label><input type="number" id="hd-C" value="6" min="1"></div>
+<div class="field"><label>Population Size</label><input type="number" id="hd-pop" value="200" min="10"></div>
+<div class="field"><label>Generations</label><input type="number" id="hd-gens" value="100" min="1"></div>
+<div class="field"><label>Initial Hawk % </label><input type="number" id="hd-hawkpct" value="50" min="0" max="100"></div>
+<div class="btn-row">
+<button class="primary" onclick="HD.run()">▶ Simulate</button>
+</div>
+</div>
+<div class="panel">
+<h3>Results</h3>
+<canvas id="hd-chart" width="700" height="300"></canvas>
+<div class="stats-grid" id="hd-stats"></div>
+<div id="hd-matrix" style="margin-top:12px"></div>
+</div>
+</div>
+</div>
+
+<!-- LLM Arena -->
+<div class="game-container" id="game-llm">
+<div class="game-desc"><h3>LLM Arena Mode</h3>Pit language models against each other and classical strategies in the Prisoner's Dilemma. Connect to a local Ollama instance to see how LLMs behave as game theory agents.</div>
+<div class="game-layout">
+<div class="panel">
+<h3>Configuration</h3>
+<div class="field"><label>Ollama URL</label><input type="text" id="llm-url" value="http://localhost:11434"></div>
+<div class="field"><label>Rounds</label><input type="number" id="llm-rounds" value="20" min="1" max="100"></div>
+<h3 style="margin-top:16px">Players (select 2+)</h3>
+<div class="strat-list" id="llm-players">
+<label class="strat-item"><input type="checkbox" checked data-llm="qwen3:8b"> 🤖 qwen3:8b</label>
+<label class="strat-item"><input type="checkbox" data-llm="gemma3:4b"> 🤖 gemma3:4b</label>
+<label class="strat-item"><input type="checkbox" data-llm="llama3.2:3b"> 🤖 llama3.2:3b</label>
+<label class="strat-item"><input type="checkbox" data-llm="smollm2:1.7b"> 🤖 smollm2:1.7b</label>
+<label class="strat-item"><input type="checkbox" checked data-llm="tit-for-tat"> 📐 Tit-for-Tat</label>
+<label class="strat-item"><input type="checkbox" data-llm="always-cooperate"> 📐 Always Cooperate</label>
+<label class="strat-item"><input type="checkbox" data-llm="always-defect"> 📐 Always Defect</label>
+<label class="strat-item"><input type="checkbox" data-llm="random"> 📐 Random</label>
+</div>
+<div class="btn-row">
+<button class="primary" onclick="LLM.run()">▶ Run Arena</button>
+<button onclick="LLM.stop()">⏹ Stop</button>
+<button onclick="LLM.exportCSV()">📥 CSV</button>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="llm-progress"></div></div>
+<div class="status-text" id="llm-status"></div>
+</div>
+<div class="panel">
+<h3>Results</h3>
+<canvas id="llm-chart" width="700" height="300"></canvas>
+<table class="results-table" id="llm-table"><thead><tr><th>Player</th><th>Score</th><th>Coop%</th><th>Reciprocity</th><th>Forgiveness</th></tr></thead><tbody></tbody></table>
+<div class="log-area" id="llm-log"></div>
+</div>
+</div>
+</div>
+
+<script>
+// ===== UTILITIES =====
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+
+// Tab switching
+$$('.tab').forEach(t => t.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  $$('.game-container').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  $(`#game-${t.dataset.tab}`).classList.add('active');
+}));
+
+// Chart helper
+const Chart = {
+  colors: ['#58a6ff','#3fb950','#f85149','#bc8cff','#f0883e','#79c0ff','#d2a8ff','#ffa657','#7ee787','#ff7b72'],
+  bar(canvas, data, labels, title) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    const pad = {t:30,b:60,l:60,r:20};
+    const cw = W-pad.l-pad.r, ch = H-pad.t-pad.b;
+    const max = Math.max(...data, 1);
+    const bw = Math.min(40, (cw/data.length)*0.7);
+    const gap = cw/data.length;
+    // bg
+    ctx.fillStyle='#0d1117'; ctx.fillRect(0,0,W,H);
+    // grid
+    ctx.strokeStyle='#21262d'; ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const y=pad.t+ch*(1-i/4);
+      ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+      ctx.fillStyle='#8b949e';ctx.font='11px Inter,sans-serif';ctx.textAlign='right';
+      ctx.fillText((max*i/4).toFixed(0),pad.l-8,y+4);
+    }
+    // bars
+    data.forEach((v,i)=>{
+      const x=pad.l+gap*i+(gap-bw)/2;
+      const h=ch*(v/max);
+      ctx.fillStyle=this.colors[i%this.colors.length];
+      ctx.fillRect(x,pad.t+ch-h,bw,h);
+      // label
+      ctx.save();ctx.translate(x+bw/2,H-pad.b+8);ctx.rotate(Math.PI/6);
+      ctx.fillStyle='#8b949e';ctx.font='10px Inter,sans-serif';ctx.textAlign='left';
+      ctx.fillText(labels[i],0,0);ctx.restore();
+    });
+    if(title){ctx.fillStyle='#c9d1d9';ctx.font='600 12px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(title,W/2,16)}
+  },
+  line(canvas, series, xLabels, title) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    const pad={t:30,b:40,l:50,r:20};
+    const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+    ctx.fillStyle='#0d1117';ctx.fillRect(0,0,W,H);
+    let allVals=series.flatMap(s=>s.data);
+    const max=Math.max(...allVals,1), min=Math.min(...allVals,0);
+    const range=max-min||1;
+    // grid
+    ctx.strokeStyle='#21262d';ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const y=pad.t+ch*(1-i/4);
+      ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+      ctx.fillStyle='#8b949e';ctx.font='11px Inter,sans-serif';ctx.textAlign='right';
+      ctx.fillText((min+range*i/4).toFixed(1),pad.l-8,y+4);
+    }
+    series.forEach((s,si)=>{
+      ctx.strokeStyle=this.colors[si%this.colors.length];ctx.lineWidth=2;
+      ctx.beginPath();
+      s.data.forEach((v,i)=>{
+        const x=pad.l+cw*(i/(s.data.length-1||1));
+        const y=pad.t+ch*(1-(v-min)/range);
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    });
+    // legend
+    let lx=pad.l;
+    series.forEach((s,si)=>{
+      ctx.fillStyle=this.colors[si%this.colors.length];
+      ctx.fillRect(lx,H-16,12,8);
+      ctx.fillStyle='#8b949e';ctx.font='10px Inter,sans-serif';ctx.textAlign='left';
+      ctx.fillText(s.name,lx+16,H-8);
+      lx+=ctx.measureText(s.name).width+30;
+    });
+    if(title){ctx.fillStyle='#c9d1d9';ctx.font='600 12px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(title,W/2,16)}
+  },
+  area(canvas, series, title) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    const pad={t:30,b:50,l:50,r:20};
+    const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+    ctx.fillStyle='#0d1117';ctx.fillRect(0,0,W,H);
+    if(!series.length||!series[0].data.length) return;
+    const len=series[0].data.length;
+    // stacked area - series are absolute values, we stack them
+    // compute stacked
+    const stacked=[];
+    for(let i=0;i<len;i++){
+      let cum=0;
+      stacked[i]=[];
+      for(let s=0;s<series.length;s++){
+        cum+=series[s].data[i];
+        stacked[i][s]=cum;
+      }
+    }
+    const maxY=Math.max(...stacked.map(s=>s[s.length-1]),1);
+    // draw from top series to bottom
+    for(let s=series.length-1;s>=0;s--){
+      ctx.beginPath();
+      for(let i=0;i<len;i++){
+        const x=pad.l+cw*(i/(len-1||1));
+        const y=pad.t+ch*(1-stacked[i][s]/maxY);
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      // bottom line
+      for(let i=len-1;i>=0;i--){
+        const x=pad.l+cw*(i/(len-1||1));
+        const y=s>0?pad.t+ch*(1-stacked[i][s-1]/maxY):pad.t+ch;
+        ctx.lineTo(x,y);
+      }
+      ctx.closePath();
+      ctx.fillStyle=this.colors[s%this.colors.length]+'cc';
+      ctx.fill();
+    }
+    // legend
+    let lx=pad.l;
+    series.forEach((s,si)=>{
+      ctx.fillStyle=this.colors[si%this.colors.length];
+      ctx.fillRect(lx,H-20,12,8);
+      ctx.fillStyle='#8b949e';ctx.font='10px Inter,sans-serif';ctx.textAlign='left';
+      ctx.fillText(s.name,lx+16,H-12);
+      lx+=ctx.measureText(s.name).width+28;
+    });
+    if(title){ctx.fillStyle='#c9d1d9';ctx.font='600 12px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(title,W/2,16)}
+  }
+};
+
+function downloadCSV(filename, rows) {
+  const csv = rows.map(r=>r.map(c=>typeof c==='string'&&c.includes(',')?`"${c}"`:c).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=filename;a.click();
+}
+
+function statsHTML(el, vals, labels) {
+  el.innerHTML = labels.map((l,i) => `<div class="stat-card"><div class="val">${vals[i]}</div><div class="lbl">${l}</div></div>`).join('');
+}
+
+// ===== STRATEGIES =====
+const STRATEGIES = {
+  'tit-for-tat': { name:'Tit-for-Tat', fn:(h,oh)=> oh.length===0?'C':oh[oh.length-1] },
+  'always-cooperate': { name:'Always Cooperate', fn:()=>'C' },
+  'always-defect': { name:'Always Defect', fn:()=>'D' },
+  'pavlov': { name:'Pavlov', fn:(h,oh)=>{ if(!h.length) return 'C'; return (h[h.length-1]===oh[oh.length-1])?'C':'D'; }},
+  'generous-tft': { name:'Generous TFT', fn:(h,oh)=>{ if(!oh.length) return 'C'; return oh[oh.length-1]==='D'?(Math.random()<0.1?'C':'D'):'C'; }},
+  'random': { name:'Random', fn:()=>Math.random()<0.5?'C':'D' },
+  'grudger': { name:'Grudger', fn:(h,oh)=>oh.includes('D')?'D':'C' },
+  'suspicious-tft': { name:'Suspicious TFT', fn:(h,oh)=>oh.length===0?'D':oh[oh.length-1] },
+};
+const STRAT_KEYS = Object.keys(STRATEGIES);
+
+// Init strategy checkboxes
+function initStratChecks(containerId, keys) {
+  const c = $(containerId);
+  keys.forEach(k => {
+    const s = STRATEGIES[k];
+    c.innerHTML += `<label class="strat-item"><input type="checkbox" checked data-strat="${k}"> ${s.name}</label>`;
+  });
+}
+initStratChecks('#ipd-strats', STRAT_KEYS);
+initStratChecks('#evo-strats', STRAT_KEYS);
+
+function getCheckedStrats(containerId) {
+  return [...$$(`${containerId} input[data-strat]:checked`)].map(x=>x.dataset.strat);
+}
+
+// ===== IPD MODULE =====
+const IPD = {
+  results: null,
+  async run() {
+    const T=+$('#ipd-T').value, R=+$('#ipd-R').value, P=+$('#ipd-P').value, S=+$('#ipd-S').value;
+    const rounds=+$('#ipd-rounds').value;
+    const strats=getCheckedStrats('#ipd-strats');
+    if(strats.length<2){$('#ipd-status').textContent='Select at least 2 strategies';return}
+    const scores={}, coops={}, matches={};
+    strats.forEach(s=>{scores[s]=0;coops[s]=0;matches[s]=0});
+    const pairs=[];
+    for(let i=0;i<strats.length;i++) for(let j=i+1;j<strats.length;j++) pairs.push([strats[i],strats[j]]);
+    let done=0;
+    const total=pairs.length;
+    for(const [a,b] of pairs) {
+      const ha=[], hb=[];
+      for(let r=0;r<rounds;r++){
+        const ma=STRATEGIES[a].fn(ha,hb);
+        const mb=STRATEGIES[b].fn(hb,ha);
+        ha.push(ma);hb.push(mb);
+        if(ma==='C'&&mb==='C'){scores[a]+=R;scores[b]+=R}
+        else if(ma==='C'&&mb==='D'){scores[a]+=S;scores[b]+=T}
+        else if(ma==='D'&&mb==='C'){scores[a]+=T;scores[b]+=S}
+        else{scores[a]+=P;scores[b]+=P}
+        if(ma==='C') coops[a]++;
+        if(mb==='C') coops[b]++;
+      }
+      matches[a]++;matches[b]++;
+      done++;
+      $('#ipd-progress').style.width=((done/total)*100)+'%';
+      if(done%5===0) await new Promise(r=>setTimeout(r,0));
+    }
+    // Sort
+    const sorted=strats.slice().sort((a,b)=>scores[b]-scores[a]);
+    this.results={sorted,scores,coops,matches,rounds};
+    // Table
+    const tbody=$('#ipd-table tbody');
+    tbody.innerHTML=sorted.map((s,i)=>{
+      const avg=(scores[s]/matches[s]).toFixed(1);
+      const cr=((coops[s]/(matches[s]*rounds))*100).toFixed(1)+'%';
+      const rc=i<3?` class="rank-${i+1}"`:'';
+      return `<tr><td${rc}>${i+1}</td><td>${STRATEGIES[s].name}</td><td>${scores[s]}</td><td>${avg}</td><td>${cr}</td></tr>`;
+    }).join('');
+    // Chart
+    Chart.bar($('#ipd-chart'),sorted.map(s=>scores[s]),sorted.map(s=>STRATEGIES[s].name),'Tournament Scores');
+    // Stats
+    const vals=sorted.map(s=>scores[s]);
+    const mean=(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+    const med=vals.slice().sort((a,b)=>a-b)[Math.floor(vals.length/2)];
+    const std=Math.sqrt(vals.reduce((a,v)=>a+(v-mean)**2,0)/vals.length).toFixed(1);
+    statsHTML($('#ipd-stats'),[mean,med,std,rounds*pairs.length],['Mean Score','Median','Std Dev','Total Rounds']);
+    $('#ipd-status').textContent='Tournament complete!';
+  },
+  exportCSV(){
+    if(!this.results) return;
+    const {sorted,scores,coops,matches,rounds}=this.results;
+    const rows=[['Rank','Strategy','Score','AvgPerMatch','CoopRate']];
+    sorted.forEach((s,i)=>rows.push([i+1,STRATEGIES[s].name,scores[s],(scores[s]/matches[s]).toFixed(1),((coops[s]/(matches[s]*rounds))*100).toFixed(1)+'%']));
+    downloadCSV('ipd-results.csv',rows);
+  }
+};
+
+// ===== EVOLUTIONARY MODULE =====
+const EVO = {
+  running:false,
+  stop(){this.running=false},
+  async run(){
+    this.running=true;
+    const popSize=+$('#evo-pop').value, gens=+$('#evo-gens').value, rounds=+$('#evo-rounds').value;
+    const mutRate=+$('#evo-mutation').value/100;
+    const strats=getCheckedStrats('#evo-strats');
+    if(strats.length<2){$('#evo-status').textContent='Select at least 2';return}
+    const T=5,R=3,P=1,S=0;
+    // init population
+    let pop=[];
+    for(let i=0;i<popSize;i++) pop.push(strats[i%strats.length]);
+    const history=strats.map(s=>({name:STRATEGIES[s].name,data:[]}));
+    for(let g=0;g<gens&&this.running;g++){
+      // count
+      const counts={};strats.forEach(s=>counts[s]=0);
+      pop.forEach(s=>counts[s]=(counts[s]||0)+1);
+      strats.forEach((s,i)=>history[i].data.push(counts[s]||0));
+      // fitness
+      const fitness={};pop.forEach(s=>fitness[s]=0);
+      // sample matches
+      for(let i=0;i<pop.length;i++){
+        const opp=pop[(i+Math.floor(Math.random()*(pop.length-1))+1)%pop.length];
+        const ha=[],hb=[];
+        for(let r=0;r<rounds;r++){
+          const ma=STRATEGIES[pop[i]].fn(ha,hb);
+          const mb=STRATEGIES[opp].fn(hb,ha);
+          ha.push(ma);hb.push(mb);
+          if(ma==='C'&&mb==='C') fitness[pop[i]]=(fitness[pop[i]]||0)+R;
+          else if(ma==='C'&&mb==='D') fitness[pop[i]]=(fitness[pop[i]]||0)+S;
+          else if(ma==='D'&&mb==='C') fitness[pop[i]]=(fitness[pop[i]]||0)+T;
+          else fitness[pop[i]]=(fitness[pop[i]]||0)+P;
+        }
+      }
+      // reproduce
+      const fitArr=pop.map(s=>Math.max(fitness[s]||0,0.01));
+      const total=fitArr.reduce((a,b)=>a+b,0);
+      const newPop=[];
+      for(let i=0;i<popSize;i++){
+        let r=Math.random()*total,cum=0;
+        for(let j=0;j<pop.length;j++){cum+=fitArr[j];if(cum>=r){
+          newPop.push(Math.random()<mutRate?strats[Math.floor(Math.random()*strats.length)]:pop[j]);break;
+        }}
+      }
+      pop=newPop;
+      $('#evo-progress').style.width=((g+1)/gens*100)+'%';
+      $('#evo-status').textContent=`Generation ${g+1}/${gens}`;
+      if(g%2===0){
+        Chart.area($('#evo-chart'),history,'Population Evolution');
+        await new Promise(r=>setTimeout(r,0));
+      }
+    }
+    // final count
+    const fc={};strats.forEach(s=>fc[s]=0);pop.forEach(s=>fc[s]++);
+    strats.forEach((s,i)=>history[i].data.push(fc[s]));
+    Chart.area($('#evo-chart'),history,'Population Evolution');
+    const winner=strats.reduce((a,b)=>fc[a]>fc[b]?a:b);
+    statsHTML($('#evo-stats'),[STRATEGIES[winner].name,fc[winner],popSize,gens],['Dominant','Count','Pop Size','Generations']);
+    $('#evo-status').textContent='Evolution complete!';
+    this.running=false;
+  }
+};
+
+// ===== PUBLIC GOODS =====
+const PG = {
+  results:null,
+  async run(){
+    const n=+$('#pg-players').value, factor=+$('#pg-factor').value, rounds=+$('#pg-rounds').value, endow=+$('#pg-endow').value;
+    const punish=$('#pg-punish').checked;
+    const types=[];
+    $$('[data-pg]:checked').forEach(el=>types.push(el.dataset.pg));
+    if(!types.length){return}
+    // create players
+    const players=[];
+    for(let i=0;i<n;i++) players.push({type:types[i%types.length],total:0,contribs:[],lastAvg:endow/2});
+    const poolHistory=[], payoffHistory=[];
+    for(let r=0;r<rounds;r++){
+      const contribs=players.map(p=>{
+        switch(p.type){
+          case'full':return endow;
+          case'half':return Math.floor(endow/2);
+          case'free':return 0;
+          case'conditional':return Math.round(clamp(p.lastAvg,0,endow));
+          case'random':return Math.floor(Math.random()*(endow+1));
+          default:return 0;
+        }
+      });
+      const pool=contribs.reduce((a,b)=>a+b,0);
+      const share=(pool*factor)/n;
+      poolHistory.push(pool);
+      players.forEach((p,i)=>{
+        let payoff=endow-contribs[i]+share;
+        if(punish){
+          // punish free riders (contribute < avg/2)
+          const avg=pool/n;
+          if(contribs[i]<avg/2){
+            payoff-=3; // punished
+          }
+        }
+        p.total+=payoff;
+        p.contribs.push(contribs[i]);
+        p.lastAvg=pool/n;
+      });
+      payoffHistory.push(players.reduce((a,p)=>a+p.total,0)/n);
+    }
+    this.results={players,poolHistory,rounds};
+    // chart
+    const series=[{name:'Pool',data:poolHistory},{name:'Avg Payoff',data:payoffHistory}];
+    Chart.line($('#pg-chart'),series,null,'Pool & Payoffs Over Time');
+    // table
+    const byType={};
+    players.forEach(p=>{
+      if(!byType[p.type])byType[p.type]={count:0,totalContrib:0,totalPayoff:0};
+      byType[p.type].count++;
+      byType[p.type].totalContrib+=p.contribs.reduce((a,b)=>a+b,0);
+      byType[p.type].totalPayoff+=p.total;
+    });
+    const tbody=$('#pg-table tbody');
+    tbody.innerHTML=Object.entries(byType).map(([t,d])=>`<tr><td>${t}</td><td>${d.count}</td><td>${(d.totalContrib/(d.count*rounds)).toFixed(1)}</td><td>${(d.totalPayoff/d.count).toFixed(1)}</td></tr>`).join('');
+    const totalPool=poolHistory.reduce((a,b)=>a+b,0);
+    statsHTML($('#pg-stats'),[totalPool.toFixed(0),(totalPool/rounds).toFixed(1),factor+'x',punish?'Yes':'No'],['Total Pool','Avg Pool/Rd','Multiplier','Punishment']);
+  },
+  exportCSV(){
+    if(!this.results)return;
+    const{players,rounds}=this.results;
+    const rows=[['Player','Type','Round','Contribution','TotalPayoff']];
+    players.forEach((p,i)=>p.contribs.forEach((c,r)=>rows.push([i,p.type,r,c,r===rounds-1?p.total.toFixed(1):''])));
+    downloadCSV('public-goods.csv',rows);
+  }
+};
+
+// ===== ULTIMATUM =====
+const ULT = {
+  results:null,
+  async run(){
+    const rounds=+$('#ult-rounds').value;
+    const pStrat=$('#ult-proposer').value, rStrat=$('#ult-responder').value;
+    const offers=[],accepts=[],pPayoffs=[],rPayoffs=[];
+    let lastAccepted=50;
+    for(let i=0;i<rounds;i++){
+      let offer;
+      switch(pStrat){
+        case'fair':offer=50;break;
+        case'greedy':offer=10;break;
+        case'adaptive':offer=Math.max(10,Math.min(90,lastAccepted+Math.floor((Math.random()-0.5)*10)));break;
+        case'random':offer=Math.floor(Math.random()*101);break;
+        case'mixed':offer=[50,10,30,Math.floor(Math.random()*101)][i%4];break;
+      }
+      let accept;
+      switch(rStrat){
+        case'rational':accept=true;break;
+        case'fair':accept=offer>=30;break;
+        case'spiteful':accept=offer>=40;break;
+        case'adaptive':accept=offer>=(25+Math.random()*20);break;
+        case'mixed':accept=[true,offer>=30,offer>=40,offer>=25+Math.random()*20][i%4];break;
+      }
+      offers.push(offer);accepts.push(accept);
+      if(accept){pPayoffs.push(100-offer);rPayoffs.push(offer);lastAccepted=offer;}
+      else{pPayoffs.push(0);rPayoffs.push(0);}
+    }
+    this.results={offers,accepts,pPayoffs,rPayoffs};
+    // chart - moving average of offers
+    const windowSz=Math.max(1,Math.floor(rounds/100));
+    const avgOffers=[],accRate=[];
+    for(let i=0;i<rounds;i++){
+      const start=Math.max(0,i-windowSz);
+      const slice=offers.slice(start,i+1);
+      avgOffers.push(slice.reduce((a,b)=>a+b,0)/slice.length);
+      const aSlice=accepts.slice(start,i+1);
+      accRate.push(aSlice.filter(Boolean).length/aSlice.length*100);
+    }
+    Chart.line($('#ult-chart'),[{name:'Avg Offer',data:avgOffers},{name:'Accept Rate %',data:accRate}],null,'Offers & Acceptance Over Time');
+    const totalAcc=accepts.filter(Boolean).length;
+    const avgP=(pPayoffs.reduce((a,b)=>a+b,0)/rounds).toFixed(1);
+    const avgR=(rPayoffs.reduce((a,b)=>a+b,0)/rounds).toFixed(1);
+    const avgOff=(offers.reduce((a,b)=>a+b,0)/rounds).toFixed(1);
+    statsHTML($('#ult-stats'),[avgOff,(totalAcc/rounds*100).toFixed(1)+'%',avgP,avgR],['Avg Offer','Accept Rate','Proposer Avg','Responder Avg']);
+  },
+  exportCSV(){
+    if(!this.results)return;
+    const{offers,accepts,pPayoffs,rPayoffs}=this.results;
+    const rows=[['Round','Offer','Accepted','ProposerPayoff','ResponderPayoff']];
+    offers.forEach((o,i)=>rows.push([i+1,o,accepts[i],pPayoffs[i],rPayoffs[i]]));
+    downloadCSV('ultimatum.csv',rows);
+  }
+};
+
+// ===== HAWK-DOVE =====
+const HD = {
+  async run(){
+    const V=+$('#hd-V').value, C=+$('#hd-C').value, pop=+$('#hd-pop').value, gens=+$('#hd-gens').value;
+    const hawkPct=+$('#hd-hawkpct').value/100;
+    let hawks=Math.round(pop*hawkPct);
+    const hHist=[],dHist=[];
+    for(let g=0;g<gens;g++){
+      const doves=pop-hawks;
+      hHist.push(hawks);dHist.push(doves);
+      // avg fitness
+      const pH=hawks/pop, pD=doves/pop;
+      const fH=pH*(V-C)/2+pD*V;
+      const fD=pH*0+pD*V/2;
+      const totalF=fH*hawks+fD*doves;
+      if(totalF<=0){hawks=Math.round(pop/2);continue}
+      hawks=Math.round(pop*fH*hawks/totalF);
+      hawks=clamp(hawks,0,pop);
+    }
+    Chart.line($('#hd-chart'),[{name:'Hawks',data:hHist},{name:'Doves',data:dHist}],null,'Hawk-Dove Population');
+    const ess=(V/C*100).toFixed(1);
+    const finalH=(hawks/pop*100).toFixed(1);
+    statsHTML($('#hd-stats'),[finalH+'%',(100-finalH).toFixed(1)+'%',ess+'%',V+'/'+C],['Final Hawks','Final Doves','ESS Hawk%','V/C']);
+    // Payoff matrix
+    $('#hd-matrix').innerHTML=`<h3 style="font-size:12px;color:var(--text-dim);margin-bottom:8px">PAYOFF MATRIX</h3>
+    <table class="results-table"><tr><th></th><th>Hawk</th><th>Dove</th></tr>
+    <tr><td><b>Hawk</b></td><td>${((V-C)/2).toFixed(1)}</td><td>${V}</td></tr>
+    <tr><td><b>Dove</b></td><td>0</td><td>${(V/2).toFixed(1)}</td></tr></table>
+    <p style="font-size:12px;color:var(--text-dim);margin-top:8px">ESS: ${Math.min(100,V/C*100).toFixed(1)}% Hawks when V<C</p>`;
+  }
+};
+
+// ===== LLM ARENA =====
+const LLM = {
+  running:false,
+  results:null,
+  stop(){this.running=false},
+  async callLLM(model, prompt, url){
+    const isQwen=model.startsWith('qwen');
+    const fullPrompt=isQwen?'/no_think '+prompt:prompt;
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),10000);
+    try{
+      const res=await fetch(url+'/api/generate',{
+        method:'POST',signal:ctrl.signal,
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model,prompt:fullPrompt,stream:false})
+      });
+      clearTimeout(timer);
+      const data=await res.json();
+      const resp=(data.response||'').toUpperCase();
+      if(resp.includes('COOPERATE')) return 'C';
+      if(resp.includes('DEFECT')) return 'D';
+      return Math.random()<0.5?'C':'D'; // fallback
+    }catch(e){clearTimeout(timer);return Math.random()<0.5?'C':'D'}
+  },
+  async getMove(player, myHistory, oppHistory, url){
+    const isLLM=!STRATEGIES[player];
+    if(!isLLM) return STRATEGIES[player].fn(myHistory,oppHistory);
+    const histStr=myHistory.map((m,i)=>`Round ${i+1}: You=${m==='C'?'COOPERATE':'DEFECT'}, Opponent=${oppHistory[i]==='C'?'COOPERATE':'DEFECT'}`).join('\n');
+    const prompt=`You are playing the Iterated Prisoner's Dilemma.
+Payoffs: Both cooperate=3 each. You defect,they cooperate=5,0. Both defect=1 each. You cooperate,they defect=0,5.
+${myHistory.length>0?'History:\n'+histStr:'This is the first round.'}
+What is your next move? Reply with exactly one word: COOPERATE or DEFECT.`;
+    return this.callLLM(player, prompt, url);
+  },
+  async run(){
+    this.running=true;
+    const url=$('#llm-url').value.replace(/\/$/,'');
+    const rounds=+$('#llm-rounds').value;
+    const selected=[...$$('#llm-players input:checked')].map(el=>el.dataset.llm);
+    if(selected.length<2){$('#llm-status').textContent='Select at least 2 players';return}
+    const log=$('#llm-log');log.innerHTML='';
+    const scores={},coopCounts={},reciprocity={},forgiveness={},totalRounds={};
+    selected.forEach(s=>{scores[s]=0;coopCounts[s]=0;reciprocity[s]={opp_coop_then_i_coop:0,opp_coop:0};forgiveness[s]={opp_d_then_i_c:0,opp_d:0};totalRounds[s]=0});
+    const pairs=[];
+    for(let i=0;i<selected.length;i++) for(let j=i+1;j<selected.length;j++) pairs.push([selected[i],selected[j]]);
+    let done=0;const total=pairs.length*rounds;
+    for(const [a,b] of pairs){
+      if(!this.running) break;
+      const ha=[],hb=[];
+      for(let r=0;r<rounds&&this.running;r++){
+        const [ma,mb]=await Promise.all([this.getMove(a,ha,hb,url),this.getMove(b,hb,ha,url)]);
+        ha.push(ma);hb.push(mb);
+        const T=5,R=3,P=1,S=0;
+        if(ma==='C'&&mb==='C'){scores[a]+=R;scores[b]+=R}
+        else if(ma==='C'&&mb==='D'){scores[a]+=S;scores[b]+=T}
+        else if(ma==='D'&&mb==='C'){scores[a]+=T;scores[b]+=S}
+        else{scores[a]+=P;scores[b]+=P}
+        if(ma==='C')coopCounts[a]++;if(mb==='C')coopCounts[b]++;
+        totalRounds[a]++;totalRounds[b]++;
+        // reciprocity & forgiveness tracking
+        if(r>0){
+          if(hb[r-1]==='C'){reciprocity[a].opp_coop++;if(ma==='C')reciprocity[a].opp_coop_then_i_coop++}
+          if(ha[r-1]==='C'){reciprocity[b].opp_coop++;if(mb==='C')reciprocity[b].opp_coop_then_i_coop++}
+          if(hb[r-1]==='D'){forgiveness[a].opp_d++;if(ma==='C')forgiveness[a].opp_d_then_i_c++}
+          if(ha[r-1]==='D'){forgiveness[b].opp_d++;if(mb==='C')forgiveness[b].opp_d_then_i_c++}
+        }
+        done++;
+        log.innerHTML+=`<div>${a} <span class="${ma==='C'?'coop':'defect'}">${ma}</span> vs ${b} <span class="${mb==='C'?'coop':'defect'}">${mb}</span></div>`;
+        log.scrollTop=log.scrollHeight;
+        $('#llm-progress').style.width=((done/total)*100)+'%';
+        $('#llm-status').textContent=`${a} vs ${b} — Round ${r+1}/${rounds}`;
+      }
+    }
+    // results
+    const sorted=selected.slice().sort((a,b)=>scores[b]-scores[a]);
+    this.results={sorted,scores,coopCounts,totalRounds,reciprocity,forgiveness};
+    Chart.bar($('#llm-chart'),sorted.map(s=>scores[s]),sorted.map(s=>s),'LLM Arena Scores');
+    const tbody=$('#llm-table tbody');
+    tbody.innerHTML=sorted.map(s=>{
+      const cr=(coopCounts[s]/totalRounds[s]*100).toFixed(1);
+      const rec=reciprocity[s].opp_coop>0?(reciprocity[s].opp_coop_then_i_coop/reciprocity[s].opp_coop*100).toFixed(1):'N/A';
+      const forg=forgiveness[s].opp_d>0?(forgiveness[s].opp_d_then_i_c/forgiveness[s].opp_d*100).toFixed(1):'N/A';
+      return `<tr><td>${s}</td><td>${scores[s]}</td><td>${cr}%</td><td>${rec}%</td><td>${forg}%</td></tr>`;
+    }).join('');
+    $('#llm-status').textContent=this.running?'Arena complete!':'Stopped.';
+    this.running=false;
+  },
+  exportCSV(){
+    if(!this.results)return;
+    const{sorted,scores,coopCounts,totalRounds}=this.results;
+    const rows=[['Player','Score','CoopRate']];
+    sorted.forEach(s=>rows.push([s,scores[s],(coopCounts[s]/totalRounds[s]*100).toFixed(1)+'%']));
+    downloadCSV('llm-arena.csv',rows);
+  }
+};
+
+// Load saved config
+try{const c=JSON.parse(localStorage.getItem('gt-config'));if(c){
+  if(c.ipdRounds)$('#ipd-rounds').value=c.ipdRounds;
+}}catch(e){}
+// Save on unload
+window.addEventListener('beforeunload',()=>{
+  try{localStorage.setItem('gt-config',JSON.stringify({ipdRounds:$('#ipd-rounds').value}))}catch(e){}
+});
+</script>
+</body>
+</html>
